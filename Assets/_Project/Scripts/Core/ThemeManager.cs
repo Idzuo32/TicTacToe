@@ -67,6 +67,11 @@ namespace TicTacToe
         /// <param name="themeId">The <c>ThemeId</c> of a theme in <c>_availableThemes</c>.</param>
         public void ApplyTheme(string themeId)
         {
+            if (string.IsNullOrEmpty(themeId))
+            {
+                themeId = "Classic";
+            }
+
             if (_availableThemes == null || _availableThemes.Length == 0)
             {
                 return;

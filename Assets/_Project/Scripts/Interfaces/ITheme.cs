@@ -8,6 +8,12 @@ namespace TicTacToe.Data
     /// ScriptableObject. Adding a new theme requires zero code changes —
     /// only a new asset that satisfies this interface.
     /// </summary>
+    /// <remarks>
+    /// No board background sprite exists in this contract: the provided
+    /// asset pack does not ship one, so the board panel renders as a flat
+    /// color tinted by <see cref="Player1Color"/> / <see cref="Player2Color"/>
+    /// instead. See <c>wiki/architecture.md</c> for the rationale.
+    /// </remarks>
     public interface ITheme
     {
         /// <summary>Stable identifier persisted in <c>GameSettings</c>.</summary>
@@ -21,9 +27,6 @@ namespace TicTacToe.Data
 
         /// <summary>Sprite used to render the O mark on the board.</summary>
         Sprite OSprite { get; }
-
-        /// <summary>Sprite used as the backdrop behind the 3x3 grid.</summary>
-        Sprite BoardBackground { get; }
 
         /// <summary>Tint applied to player 1's UI elements (HUD, score, mark).</summary>
         Color Player1Color { get; }

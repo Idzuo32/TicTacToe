@@ -80,6 +80,12 @@ namespace TicTacToe
             try
             {
                 string json = File.ReadAllText(path);
+
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return new T();
+                }
+
                 T data = JsonUtility.FromJson<T>(json);
                 return data ?? new T();
             }

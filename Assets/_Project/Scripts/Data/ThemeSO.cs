@@ -22,7 +22,6 @@ namespace TicTacToe.Data
         [Header("Sprites")]
         [SerializeField] private Sprite _xSprite;
         [SerializeField] private Sprite _oSprite;
-        [SerializeField] private Sprite _boardBackground;
 
         [Header("Player Colors")]
         [SerializeField] private Color _player1Color = Color.white;
@@ -39,9 +38,6 @@ namespace TicTacToe.Data
 
         /// <inheritdoc />
         public Sprite OSprite => _oSprite;
-
-        /// <inheritdoc />
-        public Sprite BoardBackground => _boardBackground;
 
         /// <inheritdoc />
         public Color Player1Color => _player1Color;

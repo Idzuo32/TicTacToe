@@ -6,15 +6,19 @@ namespace TicTacToe
 {
     /// <summary>
     /// Persistent singleton that owns the <see cref="GameState"/> state
-    /// machine and broadcasts every game-wide event. Has no knowledge of UI,
-    /// audio, save, or board logic — those systems subscribe to the events
-    /// below and react in isolation.
+    /// machine and coordinates the match lifecycle. Every game-wide event
+    /// is broadcast from here so UI, audio, and save systems subscribe to
+    /// one source of truth.
     /// </summary>
     /// <remarks>
-    /// Command methods (<see cref="StartGame"/>, <see cref="RestartGame"/>,
+    /// Holds scene-scoped references to <see cref="TurnManager"/> and
+    /// <see cref="GameTimer"/> registered by those systems in their
+    /// <c>OnEnable</c>. This keeps game-flow orchestration centralised
+    /// without resorting to <c>FindObjectOfType</c> at runtime. Command
+    /// methods (<see cref="StartGame"/>, <see cref="RestartGame"/>,
     /// <see cref="ExitToMenu"/>, <see cref="PauseGame"/>,
     /// <see cref="ResumeGame"/>) are the only allowed external mutation
-    /// path. Everything else observes.
+    /// path.
     /// </remarks>
     public class GameManager : MonoBehaviour
     {
@@ -39,6 +43,10 @@ namespace TicTacToe
         /// <summary>Current high-level state; mutated only via <see cref="SetState"/>.</summary>
         public GameState CurrentState { get; private set; } = GameState.MainMenu;
 
+        private TurnManager _turnManager;
+        private GameTimer _gameTimer;
+        private bool _matchPending;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -51,6 +59,16 @@ namespace TicTacToe
             DontDestroyOnLoad(gameObject);
         }
 
+        private void OnEnable()
+        {
+            SceneLoader.OnSceneLoadCompleted += HandleSceneLoadCompleted;
+        }
+
+        private void OnDisable()
+        {
+            SceneLoader.OnSceneLoadCompleted -= HandleSceneLoadCompleted;
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
@@ -60,25 +78,98 @@ namespace TicTacToe
         }
 
         /// <summary>
-        /// Transition to <see cref="GameState.Playing"/> and load the game
-        /// scene. Called by <c>ThemeSelectionPopup</c> after the player
-        /// confirms a theme.
+        /// Called by <see cref="TurnManager"/> in its <c>OnEnable</c> so
+        /// GameManager holds a live reference across scene loads without
+        /// using <c>FindObjectOfType</c>.
         /// </summary>
-        public void StartGame()
+        public void RegisterTurnManager(TurnManager turnManager)
         {
-            SetState(GameState.Playing);
+            _turnManager = turnManager;
+            TryBeginPendingMatch();
+        }
+
+        /// <summary>Release the registered <see cref="TurnManager"/> on scene unload.</summary>
+        public void UnregisterTurnManager(TurnManager turnManager)
+        {
+            if (_turnManager == turnManager)
+            {
+                _turnManager = null;
+            }
+        }
+
+        /// <summary>
+        /// Called by <see cref="GameTimer"/> in its <c>OnEnable</c> so
+        /// GameManager can read <c>ElapsedSeconds</c> for save records and
+        /// drive start/stop without a static accessor.
+        /// </summary>
+        public void RegisterGameTimer(GameTimer gameTimer)
+        {
+            _gameTimer = gameTimer;
+            TryBeginPendingMatch();
+        }
+
+        /// <summary>Release the registered <see cref="GameTimer"/> on scene unload.</summary>
+        public void UnregisterGameTimer(GameTimer gameTimer)
+        {
+            if (_gameTimer == gameTimer)
+            {
+                _gameTimer = null;
+            }
+        }
+
+        /// <summary>
+        /// Entry point used by <c>ThemeSelectionPopup</c> to navigate from
+        /// the menu into a fresh match. Loads <c>GameScene</c> and defers
+        /// the actual match begin to <see cref="StartGame"/>, which is
+        /// triggered automatically once the scene load completes and the
+        /// match systems have registered.
+        /// </summary>
+        public void RequestStartGame()
+        {
+            _matchPending = true;
             SceneLoader.LoadGameScene();
         }
 
         /// <summary>
+        /// Begin a match in the already-loaded <c>GameScene</c>. Sets state
+        /// to <see cref="GameState.Playing"/>, resets the turn rotation,
+        /// and starts the timer from zero. Invoked automatically by the
+        /// scene-load completion handler after <see cref="RequestStartGame"/>
+        /// or manually once <see cref="TurnManager"/> and
+        /// <see cref="GameTimer"/> have registered.
+        /// </summary>
+        public void StartGame()
+        {
+            SetState(GameState.Playing);
+
+            if (_turnManager != null)
+            {
+                _turnManager.ResetTurns();
+            }
+
+            if (_gameTimer != null)
+            {
+                _gameTimer.ResetTimer();
+                _gameTimer.StartTimer();
+            }
+        }
+
+        /// <summary>
         /// Reset the in-scene match state without reloading the scene.
-        /// Fires <see cref="OnGameRestarted"/> so the board, turn manager,
-        /// timer, and HUD all clear themselves in place.
+        /// Fires <see cref="OnGameRestarted"/> so the board, strike
+        /// animator, and timer all clear themselves in place, then resets
+        /// the turn rotation so <see cref="OnTurnChanged"/> fires for the
+        /// fresh match.
         /// </summary>
         public void RestartGame()
         {
             SetState(GameState.Playing);
             OnGameRestarted?.Invoke();
+
+            if (_turnManager != null)
+            {
+                _turnManager.ResetTurns();
+            }
         }
 
         /// <summary>
@@ -87,6 +178,7 @@ namespace TicTacToe
         /// </summary>
         public void ExitToMenu()
         {
+            _matchPending = false;
             SetState(GameState.MainMenu);
             SceneLoader.LoadPlayScene();
         }
@@ -131,8 +223,10 @@ namespace TicTacToe
 
         /// <summary>
         /// Entry point for match completion. Transitions to
-        /// <see cref="GameState.GameOver"/> and fires <see cref="OnGameOver"/>
-        /// so the result popup, strike animator, and save manager can react.
+        /// <see cref="GameState.GameOver"/>, stops the timer, fires
+        /// <see cref="OnGameOver"/> so popups and the strike animator can
+        /// react, then hands the outcome to <see cref="SaveManager"/> for
+        /// stats persistence.
         /// </summary>
         public void ReportGameOver(WinResult result)
         {
@@ -142,7 +236,41 @@ namespace TicTacToe
             }
 
             SetState(GameState.GameOver);
+
+            float elapsed = _gameTimer != null ? _gameTimer.ElapsedSeconds : 0f;
+
+            if (_gameTimer != null)
+            {
+                _gameTimer.StopTimer();
+            }
+
             OnGameOver?.Invoke(result);
+
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.RecordGameResult(result, elapsed);
+            }
+        }
+
+        private void HandleSceneLoadCompleted(string sceneName)
+        {
+            if (sceneName != SceneNames.GameScene || !_matchPending)
+            {
+                return;
+            }
+
+            TryBeginPendingMatch();
+        }
+
+        private void TryBeginPendingMatch()
+        {
+            if (!_matchPending || _turnManager == null || _gameTimer == null)
+            {
+                return;
+            }
+
+            _matchPending = false;
+            StartGame();
         }
 
         private void SetState(GameState newState)
