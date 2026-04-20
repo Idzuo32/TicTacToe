@@ -92,6 +92,20 @@ namespace TicTacToe.UI
         }
 
         /// <summary>
+        /// Called by an <c>AnimationEvent</c> on the final frame of the
+        /// close animation to deactivate the popup GameObject. Public so
+        /// the Animator can bind to it — <c>AnimationEvent</c> callbacks
+        /// require a public method signature. Safe to call at any time;
+        /// if a subsequent <see cref="Open"/> has already reactivated the
+        /// popup, the coroutine fallback in <see cref="Close"/> suppresses
+        /// redundant deactivation on its own path.
+        /// </summary>
+        public void DeactivateSelf()
+        {
+            gameObject.SetActive(false);
+        }
+
+        /// <summary>
         /// Subclass hook invoked inside <see cref="Open"/> after the popup
         /// is visible. Use this to populate content (stats values, theme
         /// list, confirm text) — never to trigger its own animations.
