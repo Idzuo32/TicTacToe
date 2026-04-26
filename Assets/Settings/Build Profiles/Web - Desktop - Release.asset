@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 15003, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: Web - Mobile - Release
+  m_Name: Web - Desktop - Release
   m_EditorClassIdentifier: UnityEditor.dll::UnityEditor.Build.Profile.BuildProfile
   m_AssetVersion: 1
   m_BuildTarget: 20
   m_Subtarget: 0
   m_PlatformId: 84a3bb9e7420477f885e98145999eb20
   m_PlatformBuildProfile:
-    rid: 2683200401061707776
+    rid: 2683200401061707856
   m_OverrideGlobalSceneList: 0
   m_Scenes: []
   m_HasScriptingDefines: 0
@@ -67,8 +67,8 @@ MonoBehaviour:
     - line: '|   m_VirtualRealitySplashScreen: {instanceID: 0}'
     - line: '|   defaultScreenWidth: 1920'
     - line: '|   defaultScreenHeight: 1080'
-    - line: '|   defaultScreenWidthWeb: 1080'
-    - line: '|   defaultScreenHeightWeb: 1920'
+    - line: '|   defaultScreenWidthWeb: 1920'
+    - line: '|   defaultScreenHeightWeb: 1080'
     - line: '|   m_StereoRenderingPath: 0'
     - line: '|   m_ActiveColorSpace: 1'
     - line: '|   unsupportedMSAAFallback: 0'
@@ -850,7 +850,7 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 2683200401061707776
+    - rid: 2683200401061707856
       type: {class: WebGLPlatformSettings, ns: UnityEditor.WebGL, asm: UnityEditor.WebGL.Extensions}
       data:
         m_Development: 0
@@ -870,4 +870,4 @@ MonoBehaviour:
         m_CodeOptimization: 3
         m_WebGLClientBrowserPath: 
         m_WebGLClientBrowserType: 0
-        m_WebGLTextureSubtarget: 4
+        m_WebGLTextureSubtarget: 1

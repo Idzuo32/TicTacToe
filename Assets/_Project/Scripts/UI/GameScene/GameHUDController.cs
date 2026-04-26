@@ -48,7 +48,7 @@ namespace TicTacToe
         [SerializeField] private Button _settingsButton;
 
         [Tooltip("Settings popup instance present in this scene. Pushed onto the popup stack when the settings button is tapped.")]
-        [SerializeField] private PopupBase _settingsPopup;
+        [SerializeField] private SettingsPopup _settingsPopup;
 
         [Header("Result")]
         [Tooltip("Result popup shown at end of match. Opened from HandleGameOver because the popup GameObject starts inactive in GameScene and cannot self-subscribe to GameManager.OnGameOver.")]
@@ -74,6 +74,11 @@ namespace TicTacToe
                 _settingsButton.onClick.AddListener(HandleSettingsClicked);
             }
 
+            if (_settingsPopup != null)
+            {
+                _settingsPopup.OnExitClicked += HandleSettingsExitClicked;
+            }
+
             ResetDisplays();
         }
 
@@ -88,6 +93,11 @@ namespace TicTacToe
             if (_settingsButton != null)
             {
                 _settingsButton.onClick.RemoveListener(HandleSettingsClicked);
+            }
+
+            if (_settingsPopup != null)
+            {
+                _settingsPopup.OnExitClicked -= HandleSettingsExitClicked;
             }
         }
 
@@ -192,6 +202,21 @@ namespace TicTacToe
             }
 
             PopupManager.Instance.OpenPopup(_settingsPopup);
+        }
+
+        /// <summary>
+        /// Routes the settings popup's exit action to the main menu. The
+        /// popup is closed first so the popup stack does not carry stale
+        /// state across the scene load.
+        /// </summary>
+        private void HandleSettingsExitClicked()
+        {
+            if (PopupManager.Instance != null)
+            {
+                PopupManager.Instance.CloseTopPopup();
+            }
+
+            SceneLoader.LoadPlayScene();
         }
 
         private void ResetDisplays()

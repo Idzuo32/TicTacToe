@@ -110,12 +110,17 @@ namespace TicTacToe
             _cells[cellIndex].SetMark(mark, GetActiveThemeBoard());
 
             GameManager.Instance.ReportMarkPlaced(mark);
+            AudioManager.Instance?.PlayPlacement();
 
             WinResult result = WinConditionChecker.Check(_board);
             if (result != null && result.IsGameOver)
             {
                 SetAllInteractable(false);
                 GameManager.Instance.ReportGameOver(result);
+                if (result.HasWinner)
+                {
+                    AudioManager.Instance?.PlayWin();
+                }
                 return;
             }
 

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TicTacToe.Data;
@@ -31,6 +32,16 @@ namespace TicTacToe.UI
         [Tooltip("Optional close button that dismisses the popup via PopupManager. Leave null to rely on an external close path.")]
         [SerializeField] private Button _closeButton;
 
+        [Tooltip("Optional exit button. Leave null in scenes where exiting is not applicable (e.g. main menu). Click is forwarded via OnExitClicked so the host scene decides what 'exit' means.")]
+        [SerializeField] private Button _exitButton;
+
+        /// <summary>
+        /// Raised when the optional exit button is clicked. The popup itself
+        /// does not act on this — host controllers (e.g. the game HUD) decide
+        /// what exiting means in their scene.
+        /// </summary>
+        public event Action OnExitClicked;
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -38,6 +49,11 @@ namespace TicTacToe.UI
             if (_closeButton != null)
             {
                 _closeButton.onClick.AddListener(HandleCloseClicked);
+            }
+
+            if (_exitButton != null)
+            {
+                _exitButton.onClick.AddListener(HandleExitClicked);
             }
         }
 
@@ -48,6 +64,11 @@ namespace TicTacToe.UI
             if (_closeButton != null)
             {
                 _closeButton.onClick.RemoveListener(HandleCloseClicked);
+            }
+
+            if (_exitButton != null)
+            {
+                _exitButton.onClick.RemoveListener(HandleExitClicked);
             }
         }
 
@@ -117,6 +138,11 @@ namespace TicTacToe.UI
             {
                 PopupManager.Instance.CloseTopPopup();
             }
+        }
+
+        private void HandleExitClicked()
+        {
+            OnExitClicked?.Invoke();
         }
     }
 }

@@ -549,7 +549,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -678,7 +678,7 @@ MonoBehaviour:
   _menuBgmClip: {fileID: 8300000, guid: b5c66d25111daea408703ec20ef5c263, type: 3}
   _sfxButtonClick: {fileID: 8300000, guid: b7408bcda52433c49a64dfbfbe5a05ba, type: 3}
   _sfxPlacement: {fileID: 8300000, guid: 627f7d7b4125021679e9ff07e521eae5, type: 3}
-  _sfxWin: {fileID: 8300000, guid: 375a0d48cec33ee6a9aeab1093ed506d, type: 3}
+  _sfxWin: {fileID: 8300000, guid: 59980d3bdff0ce646b11bed75502b64b, type: 3}
   _sfxPopup: {fileID: 8300000, guid: a60b8c65558fb153785da99b80c18879, type: 3}
 --- !u!114 &697091257
 MonoBehaviour:
@@ -1362,7 +1362,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -1647,7 +1647,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -1857,8 +1857,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 315.45505, y: 587}
-  m_SizeDelta: {x: 665.8901, y: 1196.6001}
+  m_AnchoredPosition: {x: 315.45505, y: 588.635}
+  m_SizeDelta: {x: 665.8901, y: 1193.3301}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1906446938
 MonoBehaviour:
@@ -1889,7 +1889,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1.3
+  m_PixelsPerUnitMultiplier: 1.2
 --- !u!222 &1906446939
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1990,7 +1990,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -2349,6 +2349,14 @@ PrefabInstance:
       propertyPath: m_CellSize.y
       value: 200
       objectReference: {fileID: 0}
+    - target: {fileID: 2338581282808077069, guid: c3718fa4d392a994797149ce541fb58a, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2742149138904159995, guid: c3718fa4d392a994797149ce541fb58a, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3067114957683756513, guid: c3718fa4d392a994797149ce541fb58a, type: 3}
       propertyPath: m_SizeDelta.x
       value: 640
@@ -2465,6 +2473,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1338632979}
     m_Modifications:
+    - target: {fileID: 5015823024263895079, guid: 54735be5821c9cf5885e7063fa353315, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6165531157188922219, guid: 54735be5821c9cf5885e7063fa353315, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -2576,6 +2588,10 @@ PrefabInstance:
     - target: {fileID: 3049766684687730123, guid: e28dc29c99c49394390cacfa52a10d82, type: 3}
       propertyPath: m_Name
       value: StatsPopup
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461241642424534892, guid: e28dc29c99c49394390cacfa52a10d82, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8470356277152268539, guid: e28dc29c99c49394390cacfa52a10d82, type: 3}
       propertyPath: m_Pivot.x
@@ -2694,6 +2710,14 @@ PrefabInstance:
     - target: {fileID: 788748862043818684, guid: db4b495a3235a77419c8adfa5c2e0da6, type: 3}
       propertyPath: m_Name
       value: ExitConfirmPopup
+      objectReference: {fileID: 0}
+    - target: {fileID: 4977046743606763223, guid: db4b495a3235a77419c8adfa5c2e0da6, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5340947521081420471, guid: db4b495a3235a77419c8adfa5c2e0da6, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6426233068436968413, guid: db4b495a3235a77419c8adfa5c2e0da6, type: 3}
       propertyPath: m_Pivot.x

@@ -2,14 +2,14 @@
 
 Local multiplayer Tic-Tac-Toe built in Unity 6.
 
-**Play it now →** [marko-builds.itch.io/tictactoe](https://marko-builds.itch.io/tictactoe)  
-**Source →** [github.com/Idzuo32/TicTacToe](https://github.com/Idzuo32/TicTacToe)
+**Play it now →** [marko-builds.itch.io/tictactoe](https://marko-builds.itch.io/tictactoe)
 
 ---
 
 ## How to Run
 
 **In the editor:**
+
 - Unity 6 (6000.0.43f1)
 - Open `Assets/_Project/Scenes/PlayScene.unity`
 - Press Play — always start from PlayScene
