@@ -31,16 +31,20 @@ namespace TicTacToe.UI
         [Tooltip("Optional close button that dismisses the popup via PopupManager. Leave null to rely on an external close path.")]
         [SerializeField] private Button _closeButton;
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             if (_closeButton != null)
             {
                 _closeButton.onClick.AddListener(HandleCloseClicked);
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (_closeButton != null)
             {
                 _closeButton.onClick.RemoveListener(HandleCloseClicked);

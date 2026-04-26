@@ -40,8 +40,13 @@ namespace TicTacToe
         /// <summary>Fires when the board is reset for a rematch on the same scene.</summary>
         public static event Action OnGameRestarted;
 
+        // Sentinel so the first SetState transition fires OnGameStateChanged
+        // even though the resting state is MainMenu — listeners that subscribe
+        // before Awake completes are guaranteed to receive the initial state.
+        private const GameState UNINITIALISED_STATE = (GameState)(-1);
+
         /// <summary>Current high-level state; mutated only via <see cref="SetState"/>.</summary>
-        public GameState CurrentState { get; private set; } = GameState.MainMenu;
+        public GameState CurrentState { get; private set; } = UNINITIALISED_STATE;
 
         private TurnManager _turnManager;
         private GameTimer _gameTimer;
@@ -57,6 +62,17 @@ namespace TicTacToe
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+        }
+
+        private void Start()
+        {
+            // Broadcast in Start so listeners that subscribed in their own
+            // OnEnable receive the initial state — Awake fires before any
+            // OnEnable so a broadcast there would be silent.
+            if (CurrentState == UNINITIALISED_STATE)
+            {
+                SetState(GameState.MainMenu);
+            }
         }
 
         private void OnEnable()
@@ -243,7 +259,6 @@ namespace TicTacToe
             {
                 _gameTimer.StopTimer();
             }
-
             OnGameOver?.Invoke(result);
 
             if (SaveManager.Instance != null)

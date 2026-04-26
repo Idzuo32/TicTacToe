@@ -47,6 +47,12 @@ namespace TicTacToe
 
                 File.WriteAllText(tempPath, json);
 
+                // .NET Standard 2.1 (Unity 6) doesn't expose the
+                // File.Move(src, dst, overwrite) overload, so we have to
+                // Delete-then-Move. The window between the two calls is
+                // small but non-zero; a crash there leaves the temp file
+                // intact on disk under {key}.json.tmp — recoverable by hand
+                // if it ever bites in production.
                 if (File.Exists(targetPath))
                 {
                     File.Delete(targetPath);

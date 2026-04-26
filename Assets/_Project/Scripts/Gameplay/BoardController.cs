@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TicTacToe.Data;
 
 namespace TicTacToe
@@ -29,6 +30,10 @@ namespace TicTacToe
         [Tooltip("Turn rotator for this match. Assigned in the Inspector on the GameSystems GameObject.")]
         [SerializeField] private TurnManager _turnManager;
 
+        [Header("Theming")]
+        [Tooltip("Image rendering the board panel background. Tinted/sprited from the active IThemeBoard.")]
+        [SerializeField] private Image _boardBackgroundImage;
+
         private readonly PlayerMark[] _board = new PlayerMark[BOARD_SIZE];
 
         private void Awake()
@@ -58,6 +63,16 @@ namespace TicTacToe
         {
             GameManager.OnGameRestarted -= HandleGameRestarted;
             ThemeManager.OnThemeChanged -= HandleThemeChanged;
+        }
+
+        private void Start()
+        {
+            // Apply the current theme as soon as ThemeManager is reachable
+            // — Awake/OnEnable fire before scene-singleton wiring is
+            // guaranteed, but Start runs after every Awake/OnEnable so
+            // ThemeManager.Instance and ActiveThemeBoard are reliably
+            // populated by the time we get here.
+            ApplyCurrentTheme();
         }
 
         /// <summary>
@@ -92,7 +107,7 @@ namespace TicTacToe
 
             PlayerMark mark = _turnManager.CurrentMark;
             _board[cellIndex] = mark;
-            _cells[cellIndex].SetMark(mark, GetActiveTheme());
+            _cells[cellIndex].SetMark(mark, GetActiveThemeBoard());
 
             GameManager.Instance.ReportMarkPlaced(mark);
 
@@ -156,21 +171,56 @@ namespace TicTacToe
 
         private void HandleGameRestarted() => ResetBoard();
 
-        private void HandleThemeChanged(ITheme theme)
+        /// <summary>
+        /// Re-skin the entire board on a theme switch. The event payload
+        /// is intentionally ignored — board visuals come from the
+        /// segregated <see cref="IThemeBoard"/> surface, not from
+        /// <see cref="ITheme"/>.
+        /// </summary>
+        private void HandleThemeChanged(ITheme _) => ApplyCurrentTheme();
+
+        private void ApplyCurrentTheme()
         {
-            if (_cells == null || theme == null)
+            IThemeBoard themeBoard = GetActiveThemeBoard();
+            if (themeBoard == null || _cells == null)
             {
                 return;
             }
 
-            for (int i = 0; i < _board.Length; i++)
+            ApplyBoardBackground(themeBoard);
+
+            for (int i = 0; i < _cells.Length; i++)
             {
-                if (_board[i] == PlayerMark.None || _cells[i] == null)
+                if (_cells[i] == null)
                 {
                     continue;
                 }
 
-                _cells[i].SetMark(_board[i], theme);
+                _cells[i].ApplyTheme(themeBoard, IsAlternateCellIndex(i));
+
+                if (_board[i] != PlayerMark.None)
+                {
+                    _cells[i].SetMark(_board[i], themeBoard);
+                }
+            }
+        }
+
+        private void ApplyBoardBackground(IThemeBoard themeBoard)
+        {
+            if (_boardBackgroundImage == null)
+            {
+                return;
+            }
+
+            if (themeBoard.BoardBackgroundSprite != null)
+            {
+                _boardBackgroundImage.sprite = themeBoard.BoardBackgroundSprite;
+                _boardBackgroundImage.color = Color.white;
+            }
+            else
+            {
+                _boardBackgroundImage.sprite = null;
+                _boardBackgroundImage.color = themeBoard.BoardBackgroundColor;
             }
         }
 
@@ -190,9 +240,11 @@ namespace TicTacToe
             }
         }
 
-        private ITheme GetActiveTheme()
+        private static bool IsAlternateCellIndex(int index) => index % 2 != 0;
+
+        private IThemeBoard GetActiveThemeBoard()
         {
-            return ThemeManager.Instance != null ? ThemeManager.Instance.ActiveTheme : null;
+            return ThemeManager.Instance != null ? ThemeManager.Instance.ActiveThemeBoard : null;
         }
     }
 }

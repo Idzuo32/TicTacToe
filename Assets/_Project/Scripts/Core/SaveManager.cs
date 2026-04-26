@@ -80,8 +80,8 @@ namespace TicTacToe
         /// </summary>
         public void LoadAll()
         {
-            Stats = SaveSystem.Load<StatsData>("stats");
-            Settings = SaveSystem.Load<GameSettings>("settings");
+            Stats = SaveSystem.Load<StatsData>(StatsData.SAVE_KEY);
+            Settings = SaveSystem.Load<GameSettings>(GameSettings.SAVE_KEY);
 
             OnSettingsLoaded?.Invoke(Settings);
         }

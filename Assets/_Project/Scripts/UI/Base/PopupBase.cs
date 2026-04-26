@@ -1,18 +1,29 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
+using TicTacToe.Data;
 
 namespace TicTacToe.UI
 {
     /// <summary>
     /// Abstract base class for every popup. Centralises the open/close
-    /// animation, the popup SFX, and the deactivation handoff so individual
-    /// popups only describe their own content — never the lifecycle.
+    /// animation, the popup SFX, the deactivation handoff, and the
+    /// <see cref="IThemeUI"/> background skin so individual popups only
+    /// describe their own content — never the lifecycle.
     /// </summary>
     /// <remarks>
     /// Popups never close themselves directly; <see cref="PopupManager"/>
     /// owns the stack and calls <see cref="Close"/>. Subclasses implement
     /// <see cref="OnOpened"/> / <see cref="OnClosed"/> for content
-    /// population and teardown.
+    /// population and teardown, and may override <see cref="ApplyTheme"/>
+    /// to also update title / body text colors from the same
+    /// <see cref="IThemeUI"/> the base uses for the background sprite.
+    /// </remarks>
+    /// <remarks>
+    /// Subclasses that need their own <c>OnEnable</c> / <c>OnDisable</c>
+    /// must override the protected virtual versions on this class and
+    /// call <c>base.OnEnable()</c> / <c>base.OnDisable()</c> first —
+    /// otherwise the theme subscription is silently dropped.
     /// </remarks>
     public abstract class PopupBase : MonoBehaviour, IPopup
     {
@@ -25,10 +36,38 @@ namespace TicTacToe.UI
         [Tooltip("Seconds to wait after triggering PopupClose before deactivating the GameObject. Must match the close clip length.")]
         [SerializeField] private float _closeAnimationSeconds = DEFAULT_CLOSE_ANIMATION_SECONDS;
 
+        [Header("Theming")]
+        [Tooltip("Image rendering the popup panel background. Skinned from IThemeUI.PopupBackgroundSprite when present.")]
+        [SerializeField] private Image _backgroundImage;
+
         private Coroutine _closeRoutine;
 
         /// <inheritdoc />
         public bool IsOpen { get; private set; }
+
+        /// <summary>
+        /// Subscribes to theme changes and applies the current UI theme
+        /// to this popup's background. Subclasses that override this
+        /// method MUST call <c>base.OnEnable()</c> first.
+        /// </summary>
+        protected virtual void OnEnable()
+        {
+            ThemeManager.OnThemeChanged += HandleThemeChanged;
+
+            if (ThemeManager.Instance != null)
+            {
+                ApplyTheme(ThemeManager.Instance.ActiveThemeUI);
+            }
+        }
+
+        /// <summary>
+        /// Releases the theme-change subscription. Subclasses that override
+        /// this method MUST call <c>base.OnDisable()</c> first.
+        /// </summary>
+        protected virtual void OnDisable()
+        {
+            ThemeManager.OnThemeChanged -= HandleThemeChanged;
+        }
 
         /// <summary>
         /// Activate the GameObject, play the open animation, emit the popup
@@ -106,18 +145,58 @@ namespace TicTacToe.UI
         }
 
         /// <summary>
+        /// Apply the active <see cref="IThemeUI"/> to this popup's
+        /// background. When the theme provides
+        /// <see cref="IThemeUI.PopupBackgroundSprite"/> the sprite is
+        /// applied with a white tint; otherwise the background falls back
+        /// to flat <see cref="Color.white"/>. Subclasses override to also
+        /// update title and body text colors from the same
+        /// <see cref="IThemeUI"/>.
+        /// </summary>
+        /// <param name="theme">Active UI theme. May be null during very early init — call is a no-op in that case.</param>
+        public virtual void ApplyTheme(IThemeUI theme)
+        {
+            if (theme == null || _backgroundImage == null)
+            {
+                return;
+            }
+
+            if (theme.PopupBackgroundSprite != null)
+            {
+                _backgroundImage.sprite = theme.PopupBackgroundSprite;
+                _backgroundImage.color = Color.white;
+            }
+            else
+            {
+                _backgroundImage.sprite = null;
+                _backgroundImage.color = Color.white;
+            }
+        }
+
+        /// <summary>
         /// Subclass hook invoked inside <see cref="Open"/> after the popup
         /// is visible. Use this to populate content (stats values, theme
         /// list, confirm text) — never to trigger its own animations.
+        /// Default implementation is a no-op so popups with purely static
+        /// content (e.g. <c>ExitConfirmPopup</c>) don't carry empty overrides.
         /// </summary>
-        protected abstract void OnOpened();
+        protected virtual void OnOpened() { }
 
         /// <summary>
         /// Subclass hook invoked inside <see cref="Close"/> before the
         /// deactivation delay. Use this to stop timers, unsubscribe from
-        /// live events, or commit pending edits.
+        /// live events, or commit pending edits. Default implementation is
+        /// a no-op for the same reason as <see cref="OnOpened"/>.
         /// </summary>
-        protected abstract void OnClosed();
+        protected virtual void OnClosed() { }
+
+        private void HandleThemeChanged(ITheme _)
+        {
+            if (ThemeManager.Instance != null)
+            {
+                ApplyTheme(ThemeManager.Instance.ActiveThemeUI);
+            }
+        }
 
         private IEnumerator DeactivateAfterAnimation()
         {

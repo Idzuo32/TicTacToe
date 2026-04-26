@@ -41,8 +41,10 @@ namespace TicTacToe.UI
         [Tooltip("Optional close button that dismisses the popup via PopupManager.")]
         [SerializeField] private Button _closeButton;
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             SaveManager.OnStatsUpdated += HandleStatsUpdated;
 
             if (_closeButton != null)
@@ -51,8 +53,10 @@ namespace TicTacToe.UI
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             SaveManager.OnStatsUpdated -= HandleStatsUpdated;
 
             if (_closeButton != null)
@@ -65,13 +69,6 @@ namespace TicTacToe.UI
         /// Refresh every label from the currently-persisted stats snapshot.
         /// </summary>
         protected override void OnOpened() => Refresh(SaveManager.Instance?.Stats);
-
-        /// <summary>
-        /// No teardown required — labels retain their last values and the
-        /// popup keeps its <c>OnStatsUpdated</c> subscription for the
-        /// lifetime of the GameObject.
-        /// </summary>
-        protected override void OnClosed() { }
 
         private void HandleStatsUpdated(StatsData stats)
         {
@@ -92,27 +89,27 @@ namespace TicTacToe.UI
 
             if (_totalGamesLabel != null)
             {
-                _totalGamesLabel.text = stats.TotalGamesPlayed.ToString();
+                _totalGamesLabel.text = Localizer.Format(LocalisationKeys.STATS_TOTAL_GAMES, stats.TotalGamesPlayed);
             }
 
             if (_player1WinsLabel != null)
             {
-                _player1WinsLabel.text = stats.Player1Wins.ToString();
+                _player1WinsLabel.text = Localizer.Format(LocalisationKeys.STATS_P1_WINS, stats.Player1Wins);
             }
 
             if (_player2WinsLabel != null)
             {
-                _player2WinsLabel.text = stats.Player2Wins.ToString();
+                _player2WinsLabel.text = Localizer.Format(LocalisationKeys.STATS_P2_WINS, stats.Player2Wins);
             }
 
             if (_drawsLabel != null)
             {
-                _drawsLabel.text = stats.Draws.ToString();
+                _drawsLabel.text = Localizer.Format(LocalisationKeys.STATS_DRAWS, stats.Draws);
             }
 
             if (_averageDurationLabel != null)
             {
-                _averageDurationLabel.text = FormatDuration(stats.AverageDurationSeconds);
+                _averageDurationLabel.text = Localizer.Format(LocalisationKeys.STATS_AVG_DURATION, TimeFormatter.FormatMMSS(stats.AverageDurationSeconds));
             }
         }
 
@@ -122,14 +119,6 @@ namespace TicTacToe.UI
             {
                 PopupManager.Instance.CloseTopPopup();
             }
-        }
-
-        private static string FormatDuration(float seconds)
-        {
-            int total = Mathf.Max(0, Mathf.FloorToInt(seconds));
-            int minutes = total / 60;
-            int remainder = total % 60;
-            return $"{minutes:00}:{remainder:00}";
         }
     }
 }

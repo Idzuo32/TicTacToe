@@ -12,14 +12,14 @@ namespace TicTacToe.UI
     /// (rematch in place) or Exit (return to the main menu).
     /// </summary>
     /// <remarks>
-    /// The popup self-opens on <see cref="GameManager.OnGameOver"/>: the
-    /// event carries the <see cref="WinResult"/>, which is cached for
-    /// <see cref="OnOpened"/> to consume. Self-opening keeps the
-    /// end-of-match wiring inside a single class and avoids spreading
-    /// "open the result popup" responsibility across the HUD or the
-    /// board controller. Retry dismisses the popup before calling
-    /// <see cref="GameManager.RestartGame"/> so the rematch begins with a
-    /// clean stack.
+    /// The popup cannot self-subscribe to <see cref="GameManager.OnGameOver"/>
+    /// because its GameObject is inactive by default — <c>OnEnable</c>
+    /// would never run. Instead, <see cref="GameHUDController"/> owns the
+    /// <c>OnGameOver</c> subscription and calls <see cref="Show"/>, which
+    /// caches the <see cref="WinResult"/> for <see cref="OnOpened"/> to
+    /// consume and pushes the popup onto <see cref="PopupManager"/>. Retry
+    /// dismisses the popup before calling <see cref="GameManager.RestartGame"/>
+    /// so the rematch begins with a clean stack.
     /// </remarks>
     public class GameResultPopup : PopupBase
     {
@@ -43,9 +43,9 @@ namespace TicTacToe.UI
 
         private WinResult _pendingResult;
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
-            GameManager.OnGameOver += HandleGameOver;
+            base.OnEnable();
 
             if (_retryButton != null)
             {
@@ -58,9 +58,9 @@ namespace TicTacToe.UI
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
-            GameManager.OnGameOver -= HandleGameOver;
+            base.OnDisable();
 
             if (_retryButton != null)
             {
@@ -74,31 +74,14 @@ namespace TicTacToe.UI
         }
 
         /// <summary>
-        /// Write the cached <see cref="WinResult"/> into the heading and
-        /// the current <see cref="GameTimer.FormattedTime"/> into the
-        /// duration label. Falls back to <c>00:00</c> when the timer
-        /// reference is missing so the UI never shows stale text.
+        /// Single entry point for opening this popup. Caches
+        /// <paramref name="result"/> for <see cref="OnOpened"/> to read and
+        /// pushes the popup onto <see cref="PopupManager"/>. Called by
+        /// <see cref="GameHUDController"/> when <see cref="GameManager.OnGameOver"/>
+        /// fires; the popup cannot subscribe to that event itself because it
+        /// starts inactive in the scene and <c>OnEnable</c> never runs.
         /// </summary>
-        protected override void OnOpened()
-        {
-            if (_resultLabel != null)
-            {
-                _resultLabel.text = BuildResultText(_pendingResult);
-            }
-
-            if (_durationLabel != null)
-            {
-                _durationLabel.text = _gameTimer != null ? _gameTimer.FormattedTime : "00:00";
-            }
-        }
-
-        /// <summary>
-        /// Clear the cached result so a future open without a fresh
-        /// OnGameOver cannot display a stale outcome.
-        /// </summary>
-        protected override void OnClosed() => _pendingResult = null;
-
-        private void HandleGameOver(WinResult result)
+        public void Show(WinResult result)
         {
             if (result == null || !result.IsGameOver)
             {
@@ -112,6 +95,31 @@ namespace TicTacToe.UI
                 PopupManager.Instance.OpenPopup(this);
             }
         }
+
+        /// <summary>
+        /// Write the cached <see cref="WinResult"/> into the heading and
+        /// the current <see cref="GameTimer.FormattedTime"/> into the
+        /// duration label. Falls back to <c>00:00</c> when the timer
+        /// reference is missing so the UI never shows stale text.
+        /// </summary>
+        protected override void OnOpened()
+        {
+            if (_resultLabel != null)
+            {
+                _resultLabel.text = PlayerLabels.WinHeading(_pendingResult);
+            }
+
+            if (_durationLabel != null)
+            {
+                _durationLabel.text = _gameTimer != null ? _gameTimer.FormattedTime : TimeFormatter.FormatMMSS(0f);
+            }
+        }
+
+        /// <summary>
+        /// Clear the cached result so a future open without a fresh
+        /// OnGameOver cannot display a stale outcome.
+        /// </summary>
+        protected override void OnClosed() => _pendingResult = null;
 
         private void HandleRetryClicked()
         {
@@ -132,31 +140,6 @@ namespace TicTacToe.UI
             {
                 GameManager.Instance.ExitToMenu();
             }
-        }
-
-        private static string BuildResultText(WinResult result)
-        {
-            if (result == null)
-            {
-                return string.Empty;
-            }
-
-            if (result.IsDraw)
-            {
-                return "Draw";
-            }
-
-            if (result.Winner == PlayerMark.X)
-            {
-                return "Player 1 Wins";
-            }
-
-            if (result.Winner == PlayerMark.O)
-            {
-                return "Player 2 Wins";
-            }
-
-            return string.Empty;
         }
     }
 }

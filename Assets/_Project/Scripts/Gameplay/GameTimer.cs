@@ -29,7 +29,7 @@ namespace TicTacToe
         public float ElapsedSeconds { get; private set; }
 
         /// <summary>Current elapsed time formatted as <c>MM:SS</c>.</summary>
-        public string FormattedTime => Format(ElapsedSeconds);
+        public string FormattedTime => TimeFormatter.FormatMMSS(ElapsedSeconds);
 
         /// <summary>
         /// Fires once per whole second of elapsed time (and once on
@@ -105,13 +105,5 @@ namespace TicTacToe
         }
 
         private void HandleGameOver(WinResult _) => StopTimer();
-
-        private static string Format(float seconds)
-        {
-            int total = Mathf.Max(0, Mathf.FloorToInt(seconds));
-            int minutes = total / 60;
-            int remainder = total % 60;
-            return $"{minutes:00}:{remainder:00}";
-        }
     }
 }

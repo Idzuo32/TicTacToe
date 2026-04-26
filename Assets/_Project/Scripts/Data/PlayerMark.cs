@@ -7,7 +7,6 @@ namespace TicTacToe.Data
     /// </summary>
     public enum PlayerMark
     {
-        /// <summary>Empty cell, no mark placed.</summary>
         None,
 
         /// <summary>Player 1's mark.</summary>

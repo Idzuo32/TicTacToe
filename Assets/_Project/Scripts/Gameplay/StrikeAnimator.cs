@@ -1,40 +1,78 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 using TicTacToe.Data;
 
 namespace TicTacToe
 {
     /// <summary>
-    /// Activates the pre-positioned strike line that matches the winning
-    /// line reported by <see cref="WinConditionChecker"/>. Eight
-    /// <see cref="GameObject"/> slots mirror the eight possible win lines
-    /// (three rows, three columns, two diagonals); exactly one is activated
-    /// per win and optionally drives an <see cref="Animator"/> trigger for
-    /// the reveal animation.
+    /// Reveals the winning line by positioning and rotating a single
+    /// <see cref="RectTransform"/> at runtime so it spans the three cells
+    /// reported by <see cref="WinConditionChecker"/>. Listens to
+    /// <see cref="GameManager.OnGameOver"/> to show the strike and to
+    /// <see cref="GameManager.OnGameRestarted"/> to clear it.
     /// </summary>
     /// <remarks>
-    /// Holds no logic of its own — matches the incoming cell indices to the
-    /// canonical win-line table and flips the matching slot's
-    /// <see cref="GameObject.activeSelf"/>. Pre-positioning lives in the
-    /// editor: each line is a child GameObject placed over the correct row,
-    /// column, or diagonal and left inactive at authoring time.
+    /// One reusable line replaces the earlier eight pre-positioned variants.
+    /// The first and last cell in the win line define the segment; the
+    /// middle cell sits on that segment by construction. The line is
+    /// parented to the cells' container so world-space math survives
+    /// Canvas scaling across portrait and landscape.
+    ///
+    /// The reveal is driven from script rather than from the StrikeLine
+    /// Animator. The Animator approach failed on retry because the Idle
+    /// state has WriteDefaults enabled: when the popup's Retry button
+    /// disabled the line mid-animation, scale.x was captured as the new
+    /// "default" and written back over every subsequent strike, leaving
+    /// the line at scale 0. A coroutine-driven lerp avoids that pitfall
+    /// entirely and is also easier to defend in a code walkthrough.
     /// </remarks>
     public class StrikeAnimator : MonoBehaviour
     {
-        /// <summary>
-        /// Canonical win-line table in the same order as
-        /// <c>WinConditionChecker.WIN_LINES</c>. The index into this array
-        /// is the index into <see cref="_strikeLines"/>.
-        /// </summary>
-        private static readonly int[][] WIN_LINES =
-        {
-            new[] { 0, 1, 2 }, new[] { 3, 4, 5 }, new[] { 6, 7, 8 }, // rows
-            new[] { 0, 3, 6 }, new[] { 1, 4, 7 }, new[] { 2, 5, 8 }, // columns
-            new[] { 0, 4, 8 }, new[] { 2, 4, 6 }                    // diagonals
-        };
+        private const int EXPECTED_CELL_COUNT = 9;
+        private const int WIN_LINE_LENGTH = 3;
 
         [Header("Wiring")]
-        [Tooltip("Eight pre-positioned strike line GameObjects — rows 0-2, columns 0-2, diagonals 0-1. Assigned in the Inspector, all inactive by default.")]
-        [SerializeField] private GameObject[] _strikeLines;
+        [Tooltip("The reusable strike-line RectTransform. Authored horizontal and centered with pivot (0.5, 0.5); moved, rotated around Z, and optionally resized at runtime.")]
+        [SerializeField] private RectTransform _strikeLine;
+
+        [Tooltip("The nine cell anchors in row-major order (0 = top-left, 8 = bottom-right). Must match BoardController._cells index-for-index.")]
+        [SerializeField] private RectTransform[] _cellAnchors;
+
+        [Header("Sizing")]
+        [Tooltip("When true, sizeDelta.x is set to the measured distance plus padding. When false, only position and rotation are written and the authored width is preserved.")]
+        [SerializeField] private bool _resizeToFit = true;
+
+        [Tooltip("Extra length added to the measured cell-to-cell distance so the line visibly overshoots the end cells.")]
+        [SerializeField] private float _lengthPadding = 40f;
+
+        [Header("Reveal")]
+        [Tooltip("Seconds taken for the strike line to grow from zero to full width.")]
+        [SerializeField] private float _revealDuration = 0.25f;
+
+        private Image _strikeLineImage;
+        private Coroutine _revealRoutine;
+
+        private void Awake()
+        {
+            if (_strikeLine == null)
+            {
+                return;
+            }
+
+            _strikeLineImage = _strikeLine.GetComponent<Image>();
+
+            // Disable the prefab's Animator so it cannot fight the script.
+            // The Idle state runs with WriteDefaults on, which corrupts the
+            // captured scale.x default whenever the line is hidden mid-play
+            // (the Retry button's exact code path). Driving the reveal from
+            // a coroutine sidesteps that class of bug entirely.
+            Animator strikeLineAnimator = _strikeLine.GetComponent<Animator>();
+            if (strikeLineAnimator != null)
+            {
+                strikeLineAnimator.enabled = false;
+            }
+        }
 
         private void OnEnable()
         {
@@ -49,67 +87,106 @@ namespace TicTacToe
         }
 
         /// <summary>
-        /// Reveal the strike line that matches <paramref name="winLine"/>.
-        /// Resets any previously active line first so back-to-back wins on
-        /// the same scene show only the current result.
+        /// Position and rotate the strike line so it spans the supplied
+        /// winning cell indices, optionally stretching its width to fit,
+        /// then activate it and run the reveal lerp.
         /// </summary>
-        /// <param name="winLine">The three cell indices from <c>WinResult.WinLine</c>.</param>
+        /// <param name="winLine">Three cell indices from <see cref="WinResult.WinLine"/>. Endpoints at [0] and [2] define the segment.</param>
         public void PlayStrike(int[] winLine)
         {
-            if (winLine == null || winLine.Length != 3)
+            if (!ValidateInput(winLine))
             {
                 return;
             }
 
-            if (_strikeLines == null || _strikeLines.Length != WIN_LINES.Length)
+            RectTransform start = _cellAnchors[winLine[0]];
+            RectTransform end = _cellAnchors[winLine[WIN_LINE_LENGTH - 1]];
+            if (start == null || end == null)
             {
-                Debug.LogError($"[StrikeAnimator] _strikeLines must contain exactly {WIN_LINES.Length} GameObjects. Populate in the Inspector.");
+                Debug.LogError("[StrikeAnimator] A referenced cell anchor is null. Check the Inspector wiring.");
                 return;
             }
 
-            ResetStrike();
+            Vector3 startWorld = start.position;
+            Vector3 endWorld = end.position;
 
-            int lineIndex = FindLineIndex(winLine);
-            if (lineIndex < 0)
+            _strikeLine.position = (startWorld + endWorld) * 0.5f;
+
+            Vector2 delta = endWorld - startWorld;
+            float angleDegrees = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+            _strikeLine.localRotation = Quaternion.Euler(0f, 0f, angleDegrees);
+
+            if (_resizeToFit)
             {
-                Debug.LogWarning("[StrikeAnimator] Received a win line that does not match any canonical line.");
-                return;
+                Vector2 size = _strikeLine.sizeDelta;
+                size.x = delta.magnitude + _lengthPadding;
+                _strikeLine.sizeDelta = size;
             }
 
-            GameObject strike = _strikeLines[lineIndex];
-            if (strike == null)
+            // Tint from the active HUD theme so the strike matches the
+            // current palette. Pulled here rather than cached because the
+            // theme can change between matches and the active surface is
+            // always the source of truth.
+            if (_strikeLineImage != null && ThemeManager.Instance != null && ThemeManager.Instance.ActiveThemeHUD != null)
             {
-                return;
+                _strikeLineImage.color = ThemeManager.Instance.ActiveThemeHUD.StrikeColor;
             }
 
-            strike.SetActive(true);
+            _strikeLine.gameObject.SetActive(true);
 
-            Animator animator = strike.GetComponent<Animator>();
-            if (animator != null)
+            if (_revealRoutine != null)
             {
-                animator.ResetTrigger(AnimatorParams.STRIKE_PLAY);
-                animator.SetTrigger(AnimatorParams.STRIKE_PLAY);
+                StopCoroutine(_revealRoutine);
             }
+            _revealRoutine = StartCoroutine(RevealRoutine());
         }
 
         /// <summary>
-        /// Deactivate every strike line so the next match starts clean.
-        /// Called on restart and before activating a new line.
+        /// Hide the strike line so the next match starts clean. Called on
+        /// restart and before a fresh strike is positioned.
         /// </summary>
         public void ResetStrike()
         {
-            if (_strikeLines == null)
+            if (_revealRoutine != null)
             {
-                return;
+                StopCoroutine(_revealRoutine);
+                _revealRoutine = null;
             }
 
-            for (int i = 0; i < _strikeLines.Length; i++)
+            if (_strikeLine != null)
             {
-                if (_strikeLines[i] != null)
-                {
-                    _strikeLines[i].SetActive(false);
-                }
+                _strikeLine.gameObject.SetActive(false);
             }
+        }
+
+        private IEnumerator RevealRoutine()
+        {
+            // Start from zero width and grow to full so the line "draws"
+            // along the win axis. localScale.y/z stay at 1 so the stroke
+            // thickness is unaffected.
+            SetRevealProgress(0f);
+
+            float elapsed = 0f;
+            float duration = Mathf.Max(_revealDuration, 0.0001f);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetRevealProgress(Mathf.Clamp01(elapsed / duration));
+                yield return null;
+            }
+
+            SetRevealProgress(1f);
+            _revealRoutine = null;
+        }
+
+        private void SetRevealProgress(float t)
+        {
+            Vector3 scale = _strikeLine.localScale;
+            scale.x = t;
+            scale.y = 1f;
+            scale.z = 1f;
+            _strikeLine.localScale = scale;
         }
 
         private void HandleGameOver(WinResult result)
@@ -124,18 +201,26 @@ namespace TicTacToe
 
         private void HandleGameRestarted() => ResetStrike();
 
-        private static int FindLineIndex(int[] winLine)
+        private bool ValidateInput(int[] winLine)
         {
-            for (int i = 0; i < WIN_LINES.Length; i++)
+            if (winLine == null || winLine.Length != WIN_LINE_LENGTH)
             {
-                int[] candidate = WIN_LINES[i];
-                if (candidate[0] == winLine[0] && candidate[1] == winLine[1] && candidate[2] == winLine[2])
-                {
-                    return i;
-                }
+                return false;
             }
 
-            return -1;
+            if (_strikeLine == null)
+            {
+                Debug.LogError("[StrikeAnimator] _strikeLine is not assigned. Wire it in the Inspector.");
+                return false;
+            }
+
+            if (_cellAnchors == null || _cellAnchors.Length != EXPECTED_CELL_COUNT)
+            {
+                Debug.LogError($"[StrikeAnimator] _cellAnchors must contain exactly {EXPECTED_CELL_COUNT} RectTransforms in row-major order.");
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -95,29 +95,15 @@ namespace TicTacToe.UI
             GameManager.OnGameStateChanged -= HandleGameStateChanged;
         }
 
-        /// <summary>
-        /// Play button handler. Plays the button-click SFX and pushes the
-        /// ThemeSelectionPopup onto the popup stack.
-        /// </summary>
-        public void OnPlayClicked() => OpenPopup(_themeSelectionPopup);
+        // Click handlers are private — wired exclusively from OnEnable so
+        // an Inspector-side UnityEvent binding cannot accidentally double-fire.
+        private void OnPlayClicked() => OpenPopup(_themeSelectionPopup);
 
-        /// <summary>
-        /// Stats button handler. Plays the button-click SFX and pushes the
-        /// StatsPopup onto the popup stack.
-        /// </summary>
-        public void OnStatsClicked() => OpenPopup(_statsPopup);
+        private void OnStatsClicked() => OpenPopup(_statsPopup);
 
-        /// <summary>
-        /// Settings button handler. Plays the button-click SFX and pushes the
-        /// shared SettingsPopup onto the popup stack.
-        /// </summary>
-        public void OnSettingsClicked() => OpenPopup(_settingsPopup);
+        private void OnSettingsClicked() => OpenPopup(_settingsPopup);
 
-        /// <summary>
-        /// Exit button handler. Plays the button-click SFX and pushes the
-        /// ExitConfirmPopup onto the popup stack.
-        /// </summary>
-        public void OnExitClicked() => OpenPopup(_exitConfirmPopup);
+        private void OnExitClicked() => OpenPopup(_exitConfirmPopup);
 
         private void OpenPopup(PopupBase popup)
         {

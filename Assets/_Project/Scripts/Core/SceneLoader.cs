@@ -35,9 +35,13 @@ namespace TicTacToe
 
         private static AsyncOperation LoadSceneAsync(string sceneName)
         {
+            // Reject concurrent loads outright. Spawning a second runner
+            // while the first is still in flight would orphan the first
+            // [SceneLoaderRunner] GameObject under DontDestroyOnLoad.
             if (IsLoading)
             {
-                Debug.LogWarning($"[SceneLoader] Load requested for '{sceneName}' while another load is in flight.");
+                Debug.LogWarning($"[SceneLoader] Ignoring load request for '{sceneName}' — another load is already in flight.");
+                return null;
             }
 
             IsLoading = true;

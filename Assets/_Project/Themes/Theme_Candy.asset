@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce71afe7463bc833da7ff4061c4cbd81, type: 3}
+  m_Name: Theme_Candy
+  m_EditorClassIdentifier: Assembly-CSharp::TicTacToe.Data.ThemeSO
+  _themeId: Candy
+  _displayName: Candy
+  _boardBackgroundSprite: {fileID: 21300000, guid: d4477952b0f65c74f9463083ad2ffba3, type: 3}
+  _boardBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
+  _cellDefaultSprite: {fileID: 0}
+  _cellDefaultColor: {r: 1, g: 1, b: 1, a: 1}
+  _cellAlternateSprite: {fileID: 0}
+  _cellAlternateColor: {r: 1, g: 1, b: 1, a: 1}
+  _cellPressedTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  _xSprite: {fileID: 21300000, guid: 9953c2f17b8771b44a8866e64135ea1a, type: 3}
+  _oSprite: {fileID: 21300000, guid: cf8170ecee4dfd34db2b28a76256e74d, type: 3}
+  _player1Color: {r: 1, g: 1, b: 1, a: 1}
+  _player2Color: {r: 1, g: 1, b: 1, a: 1}
+  _sceneBackgroundSprite: {fileID: 21300000, guid: f0e1ba65de13c7947bb8a0a2f2db87f2, type: 3}
+  _sceneBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
+  _buttonNormalSprite: {fileID: 8599913716598242582, guid: f2c19c5a4d6eb224f9f9d6708f6d1678, type: 3}
+  _buttonPressedSprite: {fileID: -5780042667892361423, guid: 256ca7912b02c974f9e084562a0545c9, type: 3}
+  _buttonTextColor: {r: 1, g: 1, b: 1, a: 1}
+  _popupBackgroundSprite: {fileID: 21300000, guid: ef2b97ebed797d7f8b38c63d3d79f530, type: 3}
+  _popupTitleColor: {r: 1, g: 1, b: 1, a: 1}
+  _popupBodyColor: {r: 1, g: 1, b: 1, a: 1}
+  _hudTextColor: {r: 0.43609816, g: 0.9433962, b: 0.6096474, a: 1}
+  _settingsIndicatorColor: {r: 0.43529415, g: 0.9450981, b: 0.60784316, a: 1}
+  _strikeColor: {r: 0.54950094, g: 0.12964281, b: 0.72327036, a: 1}
+  _bgmClip: {fileID: 8300000, guid: 5535ab791a3a9bf42bd3c8bf8c8ddc31, type: 3}

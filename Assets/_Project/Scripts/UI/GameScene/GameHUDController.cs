@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -10,13 +11,18 @@ namespace TicTacToe
     /// Game scene HUD. Mirrors <see cref="GameManager"/> and
     /// <see cref="GameTimer"/> state onto the on-screen labels — current
     /// player indicator, per-player move counts, and the match timer — and
-    /// exposes the settings button that pushes the shared settings popup
-    /// onto <see cref="PopupManager"/>.
+    /// coordinates the scene's two popups: <see cref="SettingsPopup"/>
+    /// (opened on button tap) and <see cref="GameResultPopup"/>
+    /// (opened on <see cref="GameManager.OnGameOver"/>).
     /// </summary>
     /// <remarks>
-    /// Strictly a listener. Does not mutate game state. The only outbound
-    /// call is <see cref="PopupManager.OpenPopup"/> from the settings button,
-    /// which is a UI-side concern. Move counts are tracked locally from
+    /// Strictly a listener for game state — never mutates it. The only
+    /// outbound calls are <see cref="PopupManager.OpenPopup"/> for the
+    /// settings popup and <see cref="GameResultPopup.Show"/> for the result
+    /// popup. The HUD owns the result-popup open because that popup is
+    /// inactive by default and cannot self-subscribe to <c>OnGameOver</c>;
+    /// routing through the HUD keeps a single always-active listener in
+    /// the scene. Move counts are tracked locally from
     /// <see cref="GameManager.OnMarkPlaced"/> so the HUD stays independent
     /// of any board-state API.
     /// </remarks>
@@ -44,8 +50,16 @@ namespace TicTacToe
         [Tooltip("Settings popup instance present in this scene. Pushed onto the popup stack when the settings button is tapped.")]
         [SerializeField] private PopupBase _settingsPopup;
 
+        [Header("Result")]
+        [Tooltip("Result popup shown at end of match. Opened from HandleGameOver because the popup GameObject starts inactive in GameScene and cannot self-subscribe to GameManager.OnGameOver.")]
+        [SerializeField] private GameResultPopup _gameResultPopup;
+
+        [Tooltip("Seconds to wait after game-over before opening the result popup. Lets the strike-line reveal play out before the popup covers it.")]
+        [SerializeField] private float _resultPopupDelay = 0.5f;
+
         private int _player1MoveCount;
         private int _player2MoveCount;
+        private Coroutine _showResultPopupRoutine;
 
         private void OnEnable()
         {
@@ -84,7 +98,7 @@ namespace TicTacToe
                 return;
             }
 
-            _currentPlayerLabel.text = playerNumber == 1 ? "Player 1 (X)" : "Player 2 (O)";
+            _currentPlayerLabel.text = PlayerLabels.PlayerNameWithMark(playerNumber);
         }
 
         private void HandleMarkPlaced(PlayerMark mark)
@@ -92,37 +106,75 @@ namespace TicTacToe
             if (mark == PlayerMark.X)
             {
                 _player1MoveCount++;
-                UpdateMoveLabel(_player1MoveCountLabel, _player1MoveCount);
+                if (_player1MoveCountLabel != null)
+                {
+                    _player1MoveCountLabel.text = PlayerLabels.MoveCountLine(PlayerMark.X, _player1MoveCount);
+                }
             }
             else if (mark == PlayerMark.O)
             {
                 _player2MoveCount++;
-                UpdateMoveLabel(_player2MoveCountLabel, _player2MoveCount);
+                if (_player2MoveCountLabel != null)
+                {
+                    _player2MoveCountLabel.text = PlayerLabels.MoveCountLine(PlayerMark.O, _player2MoveCount);
+                }
             }
         }
 
+        /// <summary>
+        /// Reacts to <see cref="GameManager.OnGameOver"/> by mirroring the
+        /// outcome into the current-player label and surfacing the
+        /// <see cref="GameResultPopup"/>. The HUD owns the popup open
+        /// because the popup GameObject is inactive by default and cannot
+        /// subscribe to the event itself.
+        /// </summary>
         private void HandleGameOver(WinResult result)
         {
-            if (_currentPlayerLabel == null || result == null)
+            if (result == null)
             {
                 return;
             }
 
-            if (result.IsDraw)
+            if (_currentPlayerLabel != null)
             {
-                _currentPlayerLabel.text = "Draw";
+                _currentPlayerLabel.text = PlayerLabels.WinHeading(result);
             }
-            else if (result.Winner == PlayerMark.X)
+
+            if (_gameResultPopup != null && result.IsGameOver)
             {
-                _currentPlayerLabel.text = "Player 1 Wins";
-            }
-            else if (result.Winner == PlayerMark.O)
-            {
-                _currentPlayerLabel.text = "Player 2 Wins";
+                if (_showResultPopupRoutine != null)
+                {
+                    StopCoroutine(_showResultPopupRoutine);
+                }
+                _showResultPopupRoutine = StartCoroutine(ShowResultPopupDelayed(result));
             }
         }
 
-        private void HandleGameRestarted() => ResetDisplays();
+        private IEnumerator ShowResultPopupDelayed(WinResult result)
+        {
+            if (_resultPopupDelay > 0f)
+            {
+                yield return new WaitForSecondsRealtime(_resultPopupDelay);
+            }
+
+            _showResultPopupRoutine = null;
+
+            if (_gameResultPopup != null)
+            {
+                _gameResultPopup.Show(result);
+            }
+        }
+
+        private void HandleGameRestarted()
+        {
+            if (_showResultPopupRoutine != null)
+            {
+                StopCoroutine(_showResultPopupRoutine);
+                _showResultPopupRoutine = null;
+            }
+
+            ResetDisplays();
+        }
 
         private void HandleTimerUpdated(string formattedTime)
         {
@@ -147,25 +199,23 @@ namespace TicTacToe
             _player1MoveCount = 0;
             _player2MoveCount = 0;
 
-            UpdateMoveLabel(_player1MoveCountLabel, 0);
-            UpdateMoveLabel(_player2MoveCountLabel, 0);
+            if (_player1MoveCountLabel != null)
+            {
+                _player1MoveCountLabel.text = PlayerLabels.MoveCountLine(PlayerMark.X, _player1MoveCount);
+            }
+            if (_player2MoveCountLabel != null)
+            {
+                _player2MoveCountLabel.text = PlayerLabels.MoveCountLine(PlayerMark.O, _player2MoveCount);
+            }
 
             if (_timerLabel != null)
             {
-                _timerLabel.text = "00:00";
+                _timerLabel.text = TimeFormatter.FormatMMSS(0f);
             }
 
             if (_currentPlayerLabel != null)
             {
-                _currentPlayerLabel.text = "Player 1 (X)";
-            }
-        }
-
-        private static void UpdateMoveLabel(TMP_Text label, int count)
-        {
-            if (label != null)
-            {
-                label.text = count.ToString();
+                _currentPlayerLabel.text = PlayerLabels.PlayerNameWithMark(1);
             }
         }
     }

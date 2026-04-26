@@ -23,8 +23,10 @@ namespace TicTacToe.UI
         [Tooltip("Dismisses the popup and returns to the main menu without quitting.")]
         [SerializeField] private Button _cancelButton;
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             if (_confirmButton != null)
             {
                 _confirmButton.onClick.AddListener(HandleConfirmClicked);
@@ -36,8 +38,10 @@ namespace TicTacToe.UI
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (_confirmButton != null)
             {
                 _confirmButton.onClick.RemoveListener(HandleConfirmClicked);
@@ -48,17 +52,6 @@ namespace TicTacToe.UI
                 _cancelButton.onClick.RemoveListener(HandleCancelClicked);
             }
         }
-
-        /// <summary>
-        /// No content to populate — the popup message is static copy set in
-        /// the prefab. Hook retained for PopupBase contract compliance.
-        /// </summary>
-        protected override void OnOpened() { }
-
-        /// <summary>
-        /// No teardown required.
-        /// </summary>
-        protected override void OnClosed() { }
 
         private void HandleConfirmClicked() => Application.Quit();
 

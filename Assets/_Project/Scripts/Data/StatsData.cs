@@ -19,14 +19,16 @@ namespace TicTacToe.Data
         /// <summary>Total wins recorded for player 2 (O).</summary>
         public int Player2Wins;
 
-        /// <summary>Total draws recorded.</summary>
         public int Draws;
 
         /// <summary>Cumulative match duration in seconds across all matches.</summary>
         public float TotalDurationSeconds;
 
+        /// <summary>On-disk save key for this data class.</summary>
+        public const string SAVE_KEY = "stats";
+
         /// <inheritdoc />
-        public string SaveKey => "stats";
+        public string SaveKey => SAVE_KEY;
 
         /// <summary>
         /// Average match duration in seconds, or zero when no matches have
